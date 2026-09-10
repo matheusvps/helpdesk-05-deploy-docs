@@ -35,8 +35,25 @@ ticketsRouter.post('/', (req, res) => {
   res.status(201).json(findTicket(String(lastInsertRowid)));
 });
 
-ticketsRouter.get('/', (_req, res) => {
-  res.json(db.prepare('SELECT * FROM tickets ORDER BY created_at DESC, id DESC').all());
+const listQuerySchema = z.object({
+  status: z.enum(STATUSES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+ticketsRouter.get('/', (req, res) => {
+  const query = listQuerySchema.safeParse(req.query);
+  if (!query.success) {
+    res.status(422).json({ error: 'Invalid query', fields: query.error.flatten().fieldErrors });
+    return;
+  }
+  const { status, page, limit } = query.data;
+  const where = status ? 'WHERE status = @status' : '';
+  const items = db
+    .prepare(`SELECT * FROM tickets ${where} ORDER BY created_at DESC, id DESC LIMIT @limit OFFSET @offset`)
+    .all({ status, limit, offset: (page - 1) * limit });
+  const { total } = db.prepare(`SELECT COUNT(*) AS total FROM tickets ${where}`).get({ status }) as { total: number };
+  res.json({ items, page, limit, total });
 });
 
 ticketsRouter.get('/:id', (req, res) => {
