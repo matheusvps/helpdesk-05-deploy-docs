@@ -1,0 +1,83 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1f2933;
+  background: #f5f7fa;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #243b53;
+  color: white;
+}
+
+header a,
+header button {
+  color: white;
+}
+
+header .spacer {
+  flex: 1;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th,
+td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #d9e2ec;
+  text-align: left;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 480px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+}
+
+.error {
+  color: #b42318;
+}
+
+.field-error {
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+.comment {
+  background: white;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid #627d98;
+}
