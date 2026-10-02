@@ -1,5 +1,6 @@
 import { Link, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
+import { TicketListPage } from './pages/TicketListPage';
 import { clearSession, getToken, getUser } from './session';
 
 function RequireLogin() {
@@ -40,7 +41,7 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireLogin />}>
-        <Route path="/" element={<p>Em breve: lista de chamados.</p>} />
+        <Route path="/" element={<TicketListPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
