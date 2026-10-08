@@ -1,8 +1,9 @@
-# Help desk API
+# Help desk
 
-A small help desk backend: requesters open tickets, agents follow them up and comment until they are solved.
+A small help desk: requesters open tickets, agents follow them up and comment until they are solved.
 
-Built with Node.js, TypeScript, Express and SQLite (`better-sqlite3`). The database schema lives in versioned SQL migrations under `migrations/`.
+- **API** (repository root): Node.js, TypeScript, Express and SQLite (`better-sqlite3`). The database schema lives in versioned SQL migrations under `migrations/`.
+- **Web** (`web/`): React + TypeScript with Vite and React Router.
 
 ## Requirements
 
@@ -11,7 +12,7 @@ Built with Node.js, TypeScript, Express and SQLite (`better-sqlite3`). The datab
 
 SQLite is embedded, so there is no database server to install. The database is a single file (`helpdesk.db` by default).
 
-## Running locally
+## Running the API
 
 ```bash
 # 1. Install dependencies
@@ -31,6 +32,40 @@ npm run dev
 For a production-like run: `npm run build && npm start`.
 
 `npm run migrate` only applies migrations that were not applied yet (they are tracked in the `schema_migrations` table), so it is safe to run it again after pulling new migrations.
+
+## Running the frontend together with the API
+
+The frontend talks to the API through the path in `VITE_API_URL` (default `/api`). In development the Vite dev server proxies `/api/*` to the API (`http://localhost:3000` by default, the `/api` prefix is removed), so the browser only sees `http://localhost:5173` and **no CORS configuration is needed**.
+
+In one terminal start the API (see above):
+
+```bash
+npm run dev
+```
+
+In a second terminal start the frontend:
+
+```bash
+cd web
+npm install
+cp .env.example .env   # optional, VITE_API_URL=/api is the default
+npm run dev
+```
+
+Open http://localhost:5173 and log in with a user created through `POST /auth/register` (there is no sign-up screen). Promote one of them with `npm run promote-agent` to see the agent view.
+
+If the API runs on another port, start Vite with `API_PROXY_TARGET=http://localhost:4000 npm run dev`. To serve the built frontend from a different origin than the API, build it with `VITE_API_URL=https://your-api.example.com npm run build` and enable CORS on the API for that origin.
+
+### Screens
+
+| Route          | Screen                                                                       |
+| -------------- | ---------------------------------------------------------------------------- |
+| `/login`       | Login with email and password                                                |
+| `/`            | Ticket list with status filter (kept in the URL as `?status=` and sent to the API) |
+| `/tickets/new` | New ticket form (title is required)                                          |
+| `/tickets/:id` | Ticket detail with comments; agents can also change the status               |
+
+Every screen that loads data shows a loading message and an error message if the request fails. A `401` from the API (expired or missing token) clears the session and goes back to login; a `403` shows an access denied message.
 
 ## Authentication and roles
 
