@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth.js';
 import { db } from '../db.js';
+import { canTransition, type Status } from '../status-flow.js';
 import { parseBody, PRIORITIES, STATUSES } from '../validation.js';
 
 export const ticketsRouter = Router();
@@ -12,7 +13,7 @@ export interface Ticket {
   title: string;
   description: string;
   priority: string;
-  status: string;
+  status: Status;
   requester_id: number;
   requester_name: string;
   created_at: string;
@@ -106,6 +107,14 @@ ticketsRouter.patch('/:id', (req, res) => {
   if (!data) return;
   if (data.status !== undefined && req.user!.role !== 'atendente') {
     res.status(403).json({ error: 'Only agents can change the status of a ticket' });
+    return;
+  }
+  if (data.status !== undefined && !canTransition(ticket.status, data.status)) {
+    res.status(409).json({
+      error: `Status transition not allowed: ${ticket.status} -> ${data.status}`,
+      from: ticket.status,
+      to: data.status,
+    });
     return;
   }
   // Column names come from the schema keys above, never from the request directly.
