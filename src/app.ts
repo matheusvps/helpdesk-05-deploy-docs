@@ -1,4 +1,5 @@
 import express from 'express';
+import { errorHandler, notFoundHandler } from './errors.js';
 import { authRouter } from './routes/auth.js';
 import { commentsRouter } from './routes/comments.js';
 import { ticketsRouter } from './routes/tickets.js';
@@ -14,3 +15,6 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRouter);
 app.use('/tickets', ticketsRouter);
 app.use('/tickets/:id/comments', commentsRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);

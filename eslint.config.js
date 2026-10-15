@@ -6,5 +6,8 @@ export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'web'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  { languageOptions: { globals: globals.node } },
+  {
+    languageOptions: { globals: globals.node },
+    rules: { '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }] },
+  },
 );
