@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiFetch, errorMessage } from '../api';
 import { getUser } from '../session';
-import { PRIORITY_LABELS, STATUS_LABELS, STATUSES, type Comment, type Status, type Ticket } from '../types';
+import { NEXT_STATUSES, PRIORITY_LABELS, STATUS_LABELS, type Comment, type Status, type Ticket } from '../types';
 
 export function TicketDetailPage() {
   const { id } = useParams();
@@ -85,13 +85,14 @@ export function TicketDetailPage() {
       </p>
       <p>{ticket.description || <em>Sem descrição.</em>}</p>
 
-      {isAgent && (
+      {isAgent && NEXT_STATUSES[ticket.status].length === 0 && <p>Chamado fechado: o status não pode mais mudar.</p>}
+      {isAgent && NEXT_STATUSES[ticket.status].length > 0 && (
         <form onSubmit={changeStatus}>
           <label>
             Alterar status
             <select value={newStatus} onChange={(e) => setNewStatus(e.target.value as Status)}>
               <option value="">Selecione...</option>
-              {STATUSES.filter((s) => s !== ticket.status).map((s) => (
+              {NEXT_STATUSES[ticket.status].map((s) => (
                 <option key={s} value={s}>
                   {STATUS_LABELS[s]}
                 </option>
