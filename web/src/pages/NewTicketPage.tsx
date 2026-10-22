@@ -39,9 +39,10 @@ export function NewTicketPage() {
     <>
       <h1>Novo chamado</h1>
       <form onSubmit={handleSubmit} noValidate>
-        <label>
-          Título
+        <div className="field">
+          <label htmlFor="title">Título</label>
           <input
+            id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             aria-invalid={titleError ? true : undefined}
@@ -52,7 +53,7 @@ export function NewTicketPage() {
               {titleError}
             </span>
           )}
-        </label>
+        </div>
         <label>
           Descrição
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
