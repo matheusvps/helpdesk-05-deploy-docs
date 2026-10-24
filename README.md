@@ -164,9 +164,22 @@ Allowed values:
 
 Both are also enforced in the database with `CHECK` constraints.
 
+### Status flow
+
+Only agents change the status, and only along this flow. Any other change answers `409 Conflict` with a message naming the forbidden transition, e.g. `{"error": "Status transition not allowed: fechado -> aberto", "from": "fechado", "to": "aberto"}`.
+
+| From           | To                                    |
+| -------------- | ------------------------------------- |
+| `aberto`       | `em_andamento`                        |
+| `em_andamento` | `resolvido`                           |
+| `resolvido`    | `fechado` or `em_andamento` (reopen)  |
+| `fechado`      | none                                  |
+
+The detail screen only offers the allowed next statuses, and shows the API message if a change is still rejected.
+
 ## Errors
 
-Errors are JSON with an `error` message. Validation errors (`422`) also include `fields` with the problems per field:
+Every error response is JSON with an `error` message (including unknown routes and invalid JSON bodies). Validation errors (`422`) also include `fields` with the problems per field:
 
 ```json
 { "error": "Validation failed", "fields": { "title": ["Required"] } }
@@ -179,6 +192,20 @@ Errors are JSON with an `error` message. Validation errors (`422`) also include 
 | `npm run dev`     | Start the API with reload on change |
 | `npm run migrate` | Apply pending migrations            |
 | `npm run promote-agent -- <email>` | Give a user the agent role |
+| `npm test`        | Run the API tests                   |
 | `npm run build`   | Compile TypeScript to `dist/`       |
 | `npm start`       | Run the compiled API                |
 | `npm run lint`    | ESLint and type check               |
+
+## Tests
+
+```bash
+npm test            # API: Vitest + Supertest
+cd web && npm test  # Frontend: Vitest + Testing Library (jsdom)
+```
+
+The API tests run against an in-memory SQLite database: each test file creates a fresh database, applies all migrations, and every test starts with empty tables, so nothing depends on data created by hand. They cover validation errors (`422`/`400`), missing tickets (`404`), forbidden status transitions (`409`), requests without a token (`401`) and requesters accessing other people's tickets (`403`).
+
+The frontend tests mock `fetch` and drive the screens like a user: for example, an agent changes a status, the API answers `409`, and the test checks that the API message is shown.
+
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs lint and tests for the API and the frontend on every push and pull request.
