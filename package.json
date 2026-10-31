@@ -10,7 +10,9 @@
     "migrate": "tsx src/migrate-cli.ts",
     "lint": "eslint . && tsc --noEmit",
     "promote-agent": "tsx src/promote-agent.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "tsx src/seed.ts",
+    "migrate:prod": "node dist/migrate-cli.js"
   },
   "engines": {
     "node": ">=20"
