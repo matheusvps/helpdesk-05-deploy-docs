@@ -1,0 +1,35 @@
+# Render Blueprint: API (Docker + persistent disk for SQLite) and frontend (static site).
+# autoDeploy is off: deploys are triggered by .github/workflows/deploy.yml after the tests pass.
+services:
+  - type: web
+    name: helpdesk-api
+    runtime: docker
+    plan: starter # a persistent disk needs a paid instance
+    autoDeploy: false
+    healthCheckPath: /health
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_PATH
+        value: /data/helpdesk.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false # set to the URL of helpdesk-web
+
+  - type: web
+    name: helpdesk-web
+    runtime: static
+    autoDeploy: false
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false # set to the URL of helpdesk-api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
