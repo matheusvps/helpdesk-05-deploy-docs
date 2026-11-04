@@ -5,6 +5,10 @@ A small help desk: requesters open tickets, agents follow them up and comment un
 - **API** (repository root): Node.js, TypeScript, Express and SQLite (`better-sqlite3`). The database schema lives in versioned SQL migrations under `migrations/`.
 - **Web** (`web/`): React + TypeScript with Vite and React Router.
 
+**Public URL:** not online at the moment. The app was set up for Render (see [Deploy](#deploy)); after following those steps the frontend is served at `https://<helpdesk-web service>.onrender.com` and the API at `https://<helpdesk-api service>.onrender.com`.
+
+Full API reference: [docs/API.md](docs/API.md).
+
 ## Requirements
 
 - Node.js 20 or newer
@@ -24,6 +28,9 @@ cp .env.example .env
 
 # 3. Create the database and apply the migrations
 npm run migrate
+
+# (optional) Demo data: agent@demo.dev, ana@demo.dev and bruno@demo.dev, password demo1234
+npm run seed
 
 # 4. Start the API (http://localhost:3000)
 npm run dev
@@ -145,6 +152,9 @@ curl -X POST http://localhost:3000/tickets/1/comments \
 
 ## Routes
 
+Summary below; bodies, parameters, responses and required roles are in [docs/API.md](docs/API.md).
+
+
 | Method | Route                   | Auth | Description                                                   |
 | ------ | ----------------------- | ---- | ------------------------------------------------------------- |
 | POST   | `/auth/register`        | -    | Create an account (`name`, `email`, `password` with 8+ chars) |
@@ -192,6 +202,7 @@ Every error response is JSON with an `error` message (including unknown routes a
 | `npm run dev`     | Start the API with reload on change |
 | `npm run migrate` | Apply pending migrations            |
 | `npm run promote-agent -- <email>` | Give a user the agent role |
+| `npm run seed`    | Insert demo users and tickets       |
 | `npm test`        | Run the API tests                   |
 | `npm run build`   | Compile TypeScript to `dist/`       |
 | `npm start`       | Run the compiled API                |
@@ -209,3 +220,53 @@ The API tests run against an in-memory SQLite database: each test file creates a
 The frontend tests mock `fetch` and drive the screens like a user: for example, an agent changes a status, the API answers `409`, and the test checks that the API message is shown.
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs lint and tests for the API and the frontend on every push and pull request.
+
+## Deploy
+
+The API runs as a Docker container (`Dockerfile`) with a persistent disk for the SQLite file, and the frontend as a static site. Both are described in `render.yaml` (a [Render Blueprint](https://render.com/docs/blueprint-spec)).
+
+### Environment variables
+
+API (`helpdesk-api`):
+
+| Variable        | Required | Description                                                         |
+| --------------- | -------- | ------------------------------------------------------------------- |
+| `JWT_SECRET`    | yes      | Secret that signs the JWTs. The blueprint generates a random value. |
+| `DATABASE_PATH` | yes      | SQLite file on the persistent disk: `/data/helpdesk.db`             |
+| `CORS_ORIGIN`   | yes      | URL of the frontend, e.g. `https://helpdesk-web.onrender.com`       |
+| `PORT`          | no       | Set by the platform; defaults to `3000`                             |
+
+Frontend (`helpdesk-web`, used at build time):
+
+| Variable       | Required | Description                                             |
+| -------------- | -------- | ------------------------------------------------------- |
+| `VITE_API_URL` | yes      | URL of the API, e.g. `https://helpdesk-api.onrender.com` |
+
+GitHub repository secrets (used by `.github/workflows/deploy.yml`):
+
+| Secret                   | Description                              |
+| ------------------------ | ---------------------------------------- |
+| `RENDER_API_DEPLOY_HOOK` | Deploy hook URL of the `helpdesk-api` service |
+| `RENDER_WEB_DEPLOY_HOOK` | Deploy hook URL of the `helpdesk-web` service |
+
+### Steps to reproduce the deploy
+
+1. Fork or push this repository to GitHub.
+2. In Render, choose **New > Blueprint**, select the repository and confirm the two services from `render.yaml`.
+3. Fill the variables marked `sync: false`: `CORS_ORIGIN` on the API with the frontend URL, and `VITE_API_URL` on the frontend with the API URL. Both URLs are shown in the Render dashboard.
+4. In each service, copy the **Deploy Hook** URL (Settings) and save them in GitHub as the repository secrets `RENDER_API_DEPLOY_HOOK` and `RENDER_WEB_DEPLOY_HOOK`.
+5. Push to `main` (or run the **Deploy** workflow manually). The workflow:
+   1. installs the API dependencies, applies all migrations to a fresh database and runs the API tests;
+   2. runs the frontend tests and build;
+   3. only if both jobs pass, calls the two deploy hooks.
+6. When the API container starts it runs `node dist/migrate-cli.js` before the server (see the `CMD` in the `Dockerfile`), so pending migrations are applied on every deploy.
+7. Optional: load the demo data once from the API service shell with `node dist/seed.js`, then create real agents with `node dist/promote-agent.js <email>`.
+
+`autoDeploy` is disabled in `render.yaml`, so Render never deploys a commit on its own: deploys only happen through the workflow, after the tests.
+
+### Running the container locally
+
+```bash
+docker build -t helpdesk-api .
+docker run -p 3000:3000 -e JWT_SECRET=change-me -e DATABASE_PATH=/data/helpdesk.db -v helpdesk-data:/data helpdesk-api
+```
